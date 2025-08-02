@@ -1,0 +1,22 @@
+{
+  "xgboost": {
+    "accuracy": 0.906,
+    "roc_auc": 0.6513550326429008,
+    "cv_mean": 0.6421195413846554
+  },
+  "random_forest": {
+    "accuracy": 0.91,
+    "roc_auc": 0.7134704804847117,
+    "cv_mean": 0.6611135043468703
+  },
+  "gradient_boosting": {
+    "accuracy": 0.896,
+    "roc_auc": 0.6688272039829036,
+    "cv_mean": 0.6546744987557591
+  },
+  "logistic_regression": {
+    "accuracy": 0.904,
+    "roc_auc": 0.6889295946644122,
+    "cv_mean": 0.6864537591453449
+  }
+}

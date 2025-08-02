@@ -1,0 +1,39 @@
+{
+  "training_summary": {
+    "total_models": 4,
+    "best_model": "random_forest",
+    "best_score": 0.7134704804847117,
+    "feature_count": 51,
+    "sample_count": 2500
+  },
+  "model_performances": {
+    "xgboost": {
+      "accuracy": 0.906,
+      "roc_auc": 0.6513550326429008,
+      "cv_mean": 0.6421195413846554
+    },
+    "random_forest": {
+      "accuracy": 0.91,
+      "roc_auc": 0.7134704804847117,
+      "cv_mean": 0.6611135043468703
+    },
+    "gradient_boosting": {
+      "accuracy": 0.896,
+      "roc_auc": 0.6688272039829036,
+      "cv_mean": 0.6546744987557591
+    },
+    "logistic_regression": {
+      "accuracy": 0.904,
+      "roc_auc": 0.6889295946644122,
+      "cv_mean": 0.6864537591453449
+    }
+  },
+  "hyperparameter_tuning": {},
+  "timestamp": "2025-08-02T22:51:37.532487",
+  "dataset_info": {
+    "file": "data/loan_training_dataset.csv",
+    "samples": 2500,
+    "features": 51,
+    "approval_rate": 0.9056
+  }
+}

@@ -1,0 +1,649 @@
+# ============================================================================
+# LOAN APPROVAL SYSTEM - COMPREHENSIVE .gitignore
+# ============================================================================
+# This .gitignore file covers all aspects of the AI-powered loan approval
+# system including Python, ML models, databases, Docker, and IDE files.
+# ============================================================================
+
+# ============================================================================
+# PYTHON & VIRTUAL ENVIRONMENTS
+# ============================================================================
+
+# Byte-compiled / optimized / DLL files
+__pycache__/
+*.py[cod]
+*$py.class
+
+# C extensions
+*.so
+
+# Distribution / packaging
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+share/python-wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# PyInstaller
+#  Usually these files are written by a python script from a template
+#  before PyInstaller builds the exe, so as to inject date/other infos into it.
+*.manifest
+*.spec
+
+# Installer logs
+pip-log.txt
+pip-delete-this-directory.txt
+
+# Unit test / coverage reports
+htmlcov/
+.tox/
+.nox/
+.coverage
+.coverage.*
+.cache
+nosetests.xml
+coverage.xml
+*.cover
+*.py,cover
+.hypothesis/
+.pytest_cache/
+cover/
+
+# Translations
+*.mo
+*.pot
+
+# Django stuff (if applicable):
+*.log
+local_settings.py
+db.sqlite3
+db.sqlite3-journal
+
+# Flask stuff (if applicable):
+instance/
+.webassets-cache
+
+# Scrapy stuff (if applicable):
+.scrapy
+
+# Sphinx documentation
+docs/_build/
+
+# PyBuilder
+.pybuilder/
+target/
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+.virtualenv/
+.conda/
+.pyenv/
+
+# Pipenv
+Pipfile.lock
+
+# Poetry
+poetry.lock
+
+# pdm
+.pdm.toml
+
+# ============================================================================
+# FASTAPI & WEB FRAMEWORKS
+# ============================================================================
+
+# FastAPI specific
+.env
+.env.*
+!.env.example
+
+# Static files (if serving static content)
+staticfiles/
+static/
+media/
+
+# Session files
+sessions/
+
+# ============================================================================
+# MACHINE LEARNING & DATA SCIENCE
+# ============================================================================
+
+# Trained models and artifacts
+*.pkl
+*.joblib
+*.h5
+*.hdf5
+*.model
+*.ckpt
+*.pth
+*.pt
+*.onnx
+*.tflite
+*.pb
+
+# Model directories
+checkpoints/
+saved_models/
+artifacts/
+
+
+# Jupyter Notebook files
+.ipynb_checkpoints/
+*.ipynb
+
+# Jupyter Lab
+.jupyter/
+
+# MLflow
+mlruns/
+mlartifacts/
+
+# Weights & Biases
+wandb/
+
+# TensorBoard logs
+logs/tensorboard/
+runs/
+
+# Experiment tracking
+experiments/
+.mlflow/
+
+# Feature stores
+feast/
+.feast/
+
+# DVC (Data Version Control)
+.dvc/
+.dvcignore
+
+# ============================================================================
+# DATA FILES
+# ============================================================================
+
+# Large datasets
+*.csv
+*.tsv
+*.xlsx
+*.xls
+*.parquet
+*.avro
+*.orc
+
+# Specific data directories
+data/raw/*.csv
+data/processed/*.csv
+data/external/*.csv
+data/interim/*.csv
+
+# But keep example/sample data
+!data/sample/
+!data/examples/
+!*sample*.csv
+!*example*.csv
+!*demo*.csv
+
+# Database dumps
+*.sql
+*.dump
+*.backup
+
+# Binary data files
+*.bin
+*.dat
+*.npy
+*.npz
+
+# ============================================================================
+# CONFIGURATION & SECRETS
+# ============================================================================
+
+# Environment files
+.env
+.env.local
+.env.development
+.env.production
+.env.staging
+.env.test
+
+# Configuration files with secrets
+config/secrets.yaml
+config/secrets.json
+config/production.yaml
+config/local.yaml
+
+# API keys and credentials
+credentials.json
+service-account.json
+*.pem
+*.key
+*.crt
+*.p12
+*.pfx
+
+# Database configuration
+database.ini
+db_config.yaml
+
+# AWS credentials
+.aws/credentials
+.aws/config
+
+# Google Cloud credentials
+gcloud/
+.gcp/
+
+# ============================================================================
+# LOGGING & MONITORING
+# ============================================================================
+
+# Log files
+*.log
+*.log.*
+logs/
+log/
+
+# Specific log directories for our system
+logs/app.log*
+logs/error.log*
+logs/access.log*
+logs/debug.log*
+logs/ml.log*
+logs/training.log*
+
+# Monitoring data
+metrics/
+monitoring/
+
+# Profiling data
+*.prof
+*.profile
+
+# ============================================================================
+# DATABASE & CACHE
+# ============================================================================
+
+# SQLite databases
+*.sqlite
+*.sqlite3
+*.db
+
+# PostgreSQL
+*.pgdata
+pg_log/
+postgresql.conf
+
+# Redis dumps
+dump.rdb
+appendonly.aof
+
+# Database migration temporary files
+migrations/versions/temp_*
+alembic/versions/temp_*
+
+# Cache directories
+.cache/
+cache/
+__cache__/
+
+# ============================================================================
+# DOCKER & CONTAINERIZATION
+# ============================================================================
+
+# Docker override files
+docker-compose.override.yml
+docker-compose.local.yml
+docker-compose.dev.yml
+
+# Docker volumes
+.docker/
+docker-data/
+
+# Container data
+container-data/
+volumes/
+
+# ============================================================================
+# CLOUD & DEPLOYMENT
+# ============================================================================
+
+# Terraform
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+terraform.tfvars
+terraform.tfvars.json
+
+# Kubernetes
+k8s-secrets/
+.kube/
+kubeconfig*
+
+# Helm
+charts/*/charts/
+charts/*/requirements.lock
+
+# Serverless
+.serverless/
+
+# ============================================================================
+# IDE & EDITOR FILES
+# ============================================================================
+
+# Visual Studio Code
+.vscode/
+!.vscode/settings.json.example
+!.vscode/launch.json.example
+!.vscode/extensions.json.example
+
+# PyCharm
+.idea/
+*.iml
+*.ipr
+*.iws
+
+# Sublime Text
+*.sublime-project
+*.sublime-workspace
+
+# Vim
+*.swp
+*.swo
+*.un~
+Session.vim
+.netrwhist
+
+# Emacs
+*~
+\#*\#
+/.emacs.desktop
+/.emacs.desktop.lock
+*.elc
+auto-save-list
+tramp
+.\#*
+
+# Atom
+.atom/
+
+# Eclipse
+.project
+.pydevproject
+.settings/
+
+# ============================================================================
+# OPERATING SYSTEM FILES
+# ============================================================================
+
+# macOS
+.DS_Store
+.AppleDouble
+.LSOverride
+Icon
+._*
+.DocumentRevisions-V100
+.fseventsd
+.Spotlight-V100
+.TemporaryItems
+.Trashes
+.VolumeIcon.icns
+.com.apple.timemachine.donotpresent
+.AppleDB
+.AppleDesktop
+Network Trash Folder
+Temporary Items
+.apdisk
+
+# Windows
+Thumbs.db
+Thumbs.db:encryptable
+ehthumbs.db
+ehthumbs_vista.db
+*.tmp
+*.temp
+Desktop.ini
+$RECYCLE.BIN/
+*.cab
+*.msi
+*.msix
+*.msm
+*.msp
+*.lnk
+
+# Linux
+*~
+.fuse_hidden*
+.directory
+.Trash-*
+.nfs*
+
+# ============================================================================
+# TESTING & QUALITY ASSURANCE
+# ============================================================================
+
+# Test output
+test-results/
+test-reports/
+.coverage
+coverage.xml
+htmlcov/
+
+# Performance testing
+locust-reports/
+load-test-results/
+
+# Security scanning
+.bandit
+bandit-report.*
+safety-report.*
+
+# Code quality reports
+pylint-report.*
+flake8-report.*
+mypy-report.*
+
+# ============================================================================
+# BACKUP & TEMPORARY FILES
+# ============================================================================
+
+# Backup files
+*.bak
+*.backup
+*.old
+*.orig
+*.save
+*~
+
+# Temporary files
+tmp/
+temp/
+.tmp/
+.temp/
+
+# Archive files
+*.zip
+*.tar
+*.tar.gz
+*.tgz
+*.rar
+*.7z
+
+# ============================================================================
+# PROJECT-SPECIFIC FILES
+# ============================================================================
+
+# Development databases
+dev.db
+development.db
+test.db
+
+# Sample output files
+sample_predictions.json
+test_results.json
+demo_output/
+
+# Documentation build files
+docs/_build/
+site/
+
+# Local configuration overrides
+local_config.py
+local_settings.py
+
+# Development scripts that shouldn't be committed
+dev_*.py
+debug_*.py
+local_*.py
+temp_*.py
+
+# Generated sample data (keep generators, not generated files)
+data/generated/
+!data/generated/.gitkeep
+
+# Model training experiments
+experiments/
+model_experiments/
+hyperparameter_tuning/
+
+# Performance benchmarks
+benchmarks/results/
+performance_tests/results/
+
+# ============================================================================
+# SECURITY & COMPLIANCE
+# ============================================================================
+
+# Security scan results
+security-reports/
+vulnerability-reports/
+
+# Audit logs (if containing sensitive data)
+audit_*.log
+compliance_*.log
+
+# License compliance
+license-reports/
+
+# ============================================================================
+# MISCELLANEOUS
+# ============================================================================
+
+# Compiled translations
+*.mo
+
+# Dependency directories
+node_modules/
+jspm_packages/
+
+# Optional npm cache directory
+.npm
+
+# Optional eslint cache
+.eslintcache
+
+# Microbundle cache
+.rpt2_cache/
+.rts2_cache_cjs/
+.rts2_cache_es/
+.rts2_cache_umd/
+
+# Optional REPL history
+.node_repl_history
+
+# Output of 'npm pack'
+*.tgz
+
+# Yarn Integrity file
+.yarn-integrity
+
+# parcel-bundler cache
+.cache
+.parcel-cache
+
+# Next.js build output
+.next
+
+# Nuxt.js build / generate output
+.nuxt
+dist
+
+# Storybook build outputs
+.out
+.storybook-out
+
+# Temporary folders
+tmp/
+temp/
+
+# ============================================================================
+# KEEP THESE FILES (OVERRIDE ABOVE RULES)
+# ============================================================================
+
+# Keep example configurations
+!.env.example
+!config/example.yaml
+!docker-compose.example.yml
+
+# Keep sample data
+!data/sample/
+!data/examples/
+!*sample*
+!*example*
+!*demo*
+
+# Keep documentation
+!docs/
+!README.md
+!*.md
+
+# Keep test fixtures
+!tests/fixtures/
+!tests/data/
+
+# Keep requirements files
+!requirements*.txt
+!pyproject.toml
+!setup.py
+!setup.cfg
+
+# Keep CI/CD configuration
+!.github/
+!.gitlab-ci.yml
+!.circleci/
+!Jenkinsfile
+
+# Keep Docker files
+!Dockerfile*
+!docker-compose.yml
+!.dockerignore
+
+# Keep deployment configs
+!k8s/
+!terraform/
+!scripts/
+
+# Keep gitkeep files
+!.gitkeep
+
+# ============================================================================
+# END OF .gitignore
+# ============================================================================
