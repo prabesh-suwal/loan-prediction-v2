@@ -5,6 +5,7 @@ from typing import Dict, Tuple, Any, List
 from .data_preprocessor import DataPreprocessor
 import logging
 
+
 logger = logging.getLogger(__name__)
 
 class LoanPredictor:
@@ -80,7 +81,7 @@ class LoanPredictor:
             return result
             
         except Exception as e:
-            logger.error(f"Prediction error: {e}")
+            logger.error(f" ❌ Prediction error: {e}")
             # Return a safe fallback response
             return {
                 'approved': False,

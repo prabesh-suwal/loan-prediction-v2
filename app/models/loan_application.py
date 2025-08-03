@@ -71,9 +71,21 @@ class LoanApplication(Base):
     recommended_interest_rate = Column(Float, nullable=True)
     conditions = Column(JSON, nullable=True)
     
-    # Metadata
+    # Model Information
+    model_used = Column(String(50), nullable=True)
+    model_performance = Column(JSON, nullable=True)
+
+     # Metadata
     status = Column(String(20), default="pending")
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
-    model_used = Column(String(20), default="pending")
-    model_performance = Column(JSON, nullable=True)
+
+    # Decision Explanation Fields
+    decision_summary = Column(Text, nullable=True)
+    detailed_explanation = Column(Text, nullable=True)
+    risk_explanation = Column(JSON, nullable=True)
+    key_factors = Column(JSON, nullable=True)
+    recommendations = Column(JSON, nullable=True)
+    next_steps = Column(JSON, nullable=True)
+    explanation_metadata = Column(JSON, nullable=True)
+    plain_text_summary = Column(Text, nullable=True)

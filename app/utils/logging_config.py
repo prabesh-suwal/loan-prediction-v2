@@ -10,7 +10,7 @@ def setup_logging(log_level: str = "INFO", log_file: str = "logs/app.log"):
     os.makedirs(os.path.dirname(log_file), exist_ok=True)
     
     # Create logger
-    logger = logging.getLogger("loan_prediction")
+    logger = logging.getLogger()
     logger.setLevel(getattr(logging, log_level.upper()))
     
     # Create formatters

@@ -1,5 +1,5 @@
 from pydantic import BaseModel, Field
-from typing import Optional
+from typing import Optional, List, Dict, Any
 from datetime import datetime
 from enum import Enum
 
@@ -64,13 +64,55 @@ class LoanApplicationCreate(BaseModel):
     pincode: str = Field(default="110001", pattern="^[0-9]{6}$", description="6-digit pincode")
     region_default_rate: float = Field(default=5.0, ge=0, le=100, description="Regional default rate %")
 
+# class PredictionResult(BaseModel):
+#     approved: bool
+#     confidence_score: float
+#     risk_score: float
+#     prediction_details: dict
+#     recommended_interest_rate: Optional[float]
+#     conditions: list[str]
+
+# class LoanApplicationResponse(BaseModel):
+#     id: int
+#     status: str
+#     prediction_result: Optional[PredictionResult]
+#     created_at: datetime
+#     updated_at: datetime
+
+class RiskExplanation(BaseModel):
+    risk_score: float
+    risk_category: str
+    risk_explanation: str
+    risk_breakdown: Dict[str, Any]
+
+class KeyFactors(BaseModel):
+    positive_factors: List[str]
+    risk_factors: List[str]
+    factor_explanations: Dict[str, str]
+
+class ExplanationMetadata(BaseModel):
+    confidence_level: str
+    risk_category: str
+    decision_basis: str
+
+class DecisionExplanation(BaseModel):
+    decision_summary: str
+    detailed_explanation: str
+    risk_assessment: RiskExplanation
+    key_factors: KeyFactors
+    recommendations: List[str]
+    next_steps: List[str]
+    explanation_metadata: ExplanationMetadata
+
 class PredictionResult(BaseModel):
     approved: bool
     confidence_score: float
     risk_score: float
     prediction_details: dict
     recommended_interest_rate: Optional[float]
-    conditions: list[str]
+    conditions: List[str]
+    # NEW: Add explanation
+    explanation: Optional[DecisionExplanation] = None
 
 class LoanApplicationResponse(BaseModel):
     id: int
@@ -78,3 +120,74 @@ class LoanApplicationResponse(BaseModel):
     prediction_result: Optional[PredictionResult]
     created_at: datetime
     updated_at: datetime
+    model_used: Optional[str] = None
+    
+    # NEW: Direct explanation fields for easy access
+    decision_summary: Optional[str] = None
+    plain_text_summary: Optional[str] = None
+
+class LoanApplicationDetailedResponse(LoanApplicationResponse):
+    """Extended response with full explanation details"""
+    detailed_explanation: Optional[str] = None
+    risk_explanation: Optional[Dict[str, Any]] = None
+    key_factors: Optional[Dict[str, Any]] = None
+    recommendations: Optional[List[str]] = None
+    next_steps: Optional[List[str]] = None
+    explanation_metadata: Optional[Dict[str, Any]] = None
+    
+class PaginationMetadata(BaseModel):
+    page: int = Field(..., ge=1, description="Current page number")
+    page_size: int = Field(..., ge=1, le=100, description="Number of items per page")
+    total_count: int = Field(..., ge=0, description="Total number of items")
+    total_pages: int = Field(..., ge=0, description="Total number of pages")
+    has_next: bool = Field(..., description="Whether there is a next page")
+    has_previous: bool = Field(..., description="Whether there is a previous page")
+    next_page: Optional[int] = Field(None, description="Next page number if available")
+    previous_page: Optional[int] = Field(None, description="Previous page number if available")
+
+class LoanApplicationSummary(BaseModel):
+    """Summary statistics for the current page/filter"""
+    total_applications: int = Field(..., description="Total applications matching filters")
+    approved_count: int = Field(..., description="Number of approved applications")
+    rejected_count: int = Field(..., description="Number of rejected applications") 
+    pending_count: int = Field(..., description="Number of pending applications")
+
+class PaginatedLoanResponse(BaseModel):
+    """Paginated response for loan applications list"""
+    data: List[LoanApplicationResponse] = Field(..., description="List of loan applications")
+    pagination: PaginationMetadata = Field(..., description="Pagination information")
+    filters: Dict[str, Any] = Field(default_factory=dict, description="Applied filters")
+    summary: LoanApplicationSummary = Field(..., description="Summary statistics")
+
+# Additional filter schemas for better API documentation
+class LoanApplicationFilters(BaseModel):
+    """Available filters for loan applications"""
+    name: Optional[str] = Field(None, description="Filter by applicant name")
+    email: Optional[str] = Field(None, description="Filter by email")
+    status: Optional[str] = Field(None, description="Filter by status")
+    approved: Optional[bool] = Field(None, description="Filter by approval status")
+    risk_category: Optional[str] = Field(None, description="Filter by risk category")
+    credit_score_min: Optional[int] = Field(None, ge=300, le=850)
+    credit_score_max: Optional[int] = Field(None, ge=300, le=850)
+    loan_amount_min: Optional[float] = Field(None, ge=0)
+    loan_amount_max: Optional[float] = Field(None, ge=0)
+    sort_by: Optional[str] = Field("created_at", description="Sort field")
+    sort_order: Optional[str] = Field("desc", pattern="^(asc|desc)$")
+
+# Quick response schemas for mobile/lightweight clients
+class LoanApplicationQuickResponse(BaseModel):
+    """Minimal response for quick listing"""
+    id: int
+    name: str
+    loan_amount: float
+    status: str
+    approved: Optional[bool]
+    confidence_score: Optional[float]
+    risk_score: Optional[float]
+    created_at: datetime
+
+class PaginatedQuickLoanResponse(BaseModel):
+    """Paginated response with minimal loan data"""
+    data: List[LoanApplicationQuickResponse]
+    pagination: PaginationMetadata
+    summary: LoanApplicationSummary
