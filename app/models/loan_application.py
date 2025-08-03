@@ -75,3 +75,5 @@ class LoanApplication(Base):
     status = Column(String(20), default="pending")
     created_at = Column(DateTime, server_default=func.now())
     updated_at = Column(DateTime, server_default=func.now(), onupdate=func.now())
+    model_used = Column(String(20), default="pending")
+    model_performance = Column(JSON, nullable=True)

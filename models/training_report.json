@@ -1,39 +1,103 @@
 {
   "training_summary": {
-    "total_models": 4,
-    "best_model": "random_forest",
-    "best_score": 0.7134704804847117,
-    "feature_count": 51,
+    "total_models": 5,
+    "best_model": "logistic_regression",
+    "best_score": 0.7053214973462966,
+    "feature_count": 45,
     "sample_count": 2500
   },
   "model_performances": {
-    "xgboost": {
-      "accuracy": 0.906,
-      "roc_auc": 0.6513550326429008,
-      "cv_mean": 0.6421195413846554
+    "logistic_regression": {
+      "accuracy": 0.9,
+      "roc_auc": 0.7053214973462966,
+      "cv_mean": 0.6826614209825502
     },
     "random_forest": {
-      "accuracy": 0.91,
-      "roc_auc": 0.7134704804847117,
-      "cv_mean": 0.6611135043468703
+      "accuracy": 0.902,
+      "roc_auc": 0.660983514160913,
+      "cv_mean": 0.6457757904016065
     },
     "gradient_boosting": {
-      "accuracy": 0.896,
-      "roc_auc": 0.6688272039829036,
-      "cv_mean": 0.6546744987557591
+      "accuracy": 0.906,
+      "roc_auc": 0.6089897139636465,
+      "cv_mean": 0.6487692482458403
     },
-    "logistic_regression": {
-      "accuracy": 0.904,
-      "roc_auc": 0.6889295946644122,
-      "cv_mean": 0.6864537591453449
+    "xgboost": {
+      "accuracy": 0.908,
+      "roc_auc": 0.6388614907707483,
+      "cv_mean": 0.6707135837723481
+    },
+    "lightgbm": {
+      "accuracy": 0.844,
+      "roc_auc": 0.6576957399840307,
+      "cv_mean": 0.656241754432296
     }
   },
   "hyperparameter_tuning": {},
-  "timestamp": "2025-08-02T22:51:37.532487",
+  "training_config": {
+    "data_file": "data/loan_training_dataset.csv",
+    "models_trained": [
+      "logistic_regression",
+      "random_forest",
+      "gradient_boosting",
+      "xgboost",
+      "lightgbm"
+    ],
+    "test_size": 0.2,
+    "random_state": 42,
+    "hyperparameter_tuning": false
+  },
   "dataset_info": {
-    "file": "data/loan_training_dataset.csv",
     "samples": 2500,
-    "features": 51,
-    "approval_rate": 0.9056
-  }
+    "features": 45,
+    "approval_rate": 0.9056,
+    "feature_names": [
+      "gender",
+      "married",
+      "dependents",
+      "education",
+      "age",
+      "children",
+      "spouse_employed",
+      "self_employed",
+      "employment_type",
+      "years_in_current_job",
+      "employer_category",
+      "industry",
+      "applicant_income",
+      "coapplicant_income",
+      "monthly_expenses",
+      "other_emis",
+      "loan_amount",
+      "loan_amount_term",
+      "loan_purpose",
+      "requested_interest_rate",
+      "credit_score",
+      "credit_history",
+      "no_of_credit_cards",
+      "loan_default_history",
+      "avg_payment_delay_days",
+      "has_vehicle",
+      "has_life_insurance",
+      "property_area",
+      "bank_account_type",
+      "bank_balance",
+      "savings_score",
+      "collateral_type",
+      "city_tier",
+      "pincode",
+      "region_default_rate",
+      "total_income",
+      "loan_to_income_ratio",
+      "monthly_emi_estimated",
+      "emi_to_income_ratio",
+      "expense_to_income_ratio",
+      "obligation_to_income_ratio",
+      "collateral_to_loan_ratio",
+      "savings_months",
+      "risk_factor_count",
+      "income_per_dependent"
+    ]
+  },
+  "timestamp": "2025-08-03T08:35:19.312725"
 }

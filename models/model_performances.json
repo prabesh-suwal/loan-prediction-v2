@@ -1,22 +1,27 @@
 {
-  "xgboost": {
-    "accuracy": 0.906,
-    "roc_auc": 0.6513550326429008,
-    "cv_mean": 0.6421195413846554
+  "logistic_regression": {
+    "accuracy": 0.9,
+    "roc_auc": 0.7053214973462966,
+    "cv_mean": 0.6826614209825502
   },
   "random_forest": {
-    "accuracy": 0.91,
-    "roc_auc": 0.7134704804847117,
-    "cv_mean": 0.6611135043468703
+    "accuracy": 0.902,
+    "roc_auc": 0.660983514160913,
+    "cv_mean": 0.6457757904016065
   },
   "gradient_boosting": {
-    "accuracy": 0.896,
-    "roc_auc": 0.6688272039829036,
-    "cv_mean": 0.6546744987557591
+    "accuracy": 0.906,
+    "roc_auc": 0.6089897139636465,
+    "cv_mean": 0.6487692482458403
   },
-  "logistic_regression": {
-    "accuracy": 0.904,
-    "roc_auc": 0.6889295946644122,
-    "cv_mean": 0.6864537591453449
+  "xgboost": {
+    "accuracy": 0.908,
+    "roc_auc": 0.6388614907707483,
+    "cv_mean": 0.6707135837723481
+  },
+  "lightgbm": {
+    "accuracy": 0.844,
+    "roc_auc": 0.6576957399840307,
+    "cv_mean": 0.656241754432296
   }
 }

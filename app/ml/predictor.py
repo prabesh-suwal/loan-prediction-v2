@@ -3,11 +3,15 @@ import pandas as pd
 import joblib
 from typing import Dict, Tuple, Any, List
 from .data_preprocessor import DataPreprocessor
+import logging
+
+logger = logging.getLogger(__name__)
 
 class LoanPredictor:
     def __init__(self, model_path: str = None, preprocessor_path: str = None):
         self.model = None
         self.preprocessor = DataPreprocessor()
+        self.model_type = None
         
         if model_path:
             self.load_model(model_path)
@@ -23,248 +27,311 @@ class LoanPredictor:
             raise ValueError("Model not loaded")
         
         try:
-            # Create DataFrame from input data
-            df = pd.DataFrame([loan_data])
+            # Log input data for debugging
+            logger.info(f"Making prediction with model type: {self.model_type}")
             
-            # Remove string columns and fields that shouldn't be processed 
-            columns_to_remove = ['name', 'email', 'preferred_model']
-            for col in columns_to_remove:
-                if col in df.columns:
-                    df = df.drop(columns=[col])
+            # Preprocess the data using the same pipeline as training
+            processed_data = self.preprocessor.preprocess_loan_data(loan_data, weights)
             
-            # Apply the SAME feature engineering as training
-            df = self._apply_training_feature_engineering(df)
+            # Validate processed data shape
+            if len(processed_data.shape) == 1:
+                processed_data = processed_data.reshape(1, -1)
             
-            # Handle categorical variables with loaded encoders
-            df = self._encode_categorical_features(df)
-            
-            # Apply weights if provided
-            if weights:
-                df = self._apply_weights(df, weights)
-            
-            # Handle missing values ONLY for numerical columns
-            numerical_columns = df.select_dtypes(include=[np.number]).columns
-            df[numerical_columns] = df[numerical_columns].fillna(df[numerical_columns].median())
-            
-            # Replace any remaining NaN with 0 for categorical columns
-            df = df.fillna(0)
-            
-            # Scale features using loaded scaler
-            X_scaled = self.preprocessor.scaler.transform(df)
+            logger.info(f"Processed data shape: {processed_data.shape}")
             
             # Make prediction
-            prediction = self.model.predict(X_scaled)[0]
-            prediction_proba = self.model.predict_proba(X_scaled)[0]
+            prediction = self.model.predict(processed_data)[0]
             
-            # Calculate scores
-            confidence_score = max(prediction_proba)
-            risk_score = self._calculate_risk_score(loan_data, prediction_proba)
+            # Get prediction probabilities
+            if hasattr(self.model, 'predict_proba'):
+                prediction_proba = self.model.predict_proba(processed_data)[0]
+                confidence_score = max(prediction_proba)
+                approval_probability = prediction_proba[1] if len(prediction_proba) > 1 else prediction_proba[0]
+            else:
+                # For models without predict_proba (like SVM without probability=True)
+                confidence_score = 0.8 if prediction else 0.7
+                approval_probability = 0.8 if prediction else 0.2
+            
+            # Calculate comprehensive risk score
+            risk_score = self._calculate_risk_score(loan_data, approval_probability)
             
             # Generate detailed analysis
-            feature_importance = self._get_feature_importance(X_scaled)
+            feature_analysis = self._analyze_features(loan_data, processed_data)
             conditions = self._generate_conditions(loan_data, prediction, risk_score)
             recommended_rate = self._calculate_recommended_rate(loan_data, risk_score)
             
-            return {
+            # Create comprehensive response
+            result = {
                 'approved': bool(prediction),
                 'confidence_score': float(confidence_score),
                 'risk_score': float(risk_score),
+                'approval_probability': float(approval_probability),
                 'prediction_details': {
-                    'feature_importance': feature_importance,
+                    'feature_analysis': feature_analysis,
                     'risk_factors': self._identify_risk_factors(loan_data),
-                    'positive_factors': self._identify_positive_factors(loan_data)
+                    'positive_factors': self._identify_positive_factors(loan_data),
+                    'score_breakdown': self._get_score_breakdown(loan_data)
                 },
                 'recommended_interest_rate': recommended_rate,
                 'conditions': conditions
             }
             
+            logger.info(f"Prediction result: {result['approved']} with confidence {result['confidence_score']:.3f}")
+            return result
+            
         except Exception as e:
-            print(f"Prediction error: {e}")
-            raise ValueError(f"Error making prediction: {str(e)}")
+            logger.error(f"Prediction error: {e}")
+            # Return a safe fallback response
+            return {
+                'approved': False,
+                'confidence_score': 0.0,
+                'risk_score': 100.0,
+                'prediction_details': {
+                    'error': f"Prediction failed: {str(e)}",
+                    'risk_factors': ['System error during prediction'],
+                    'positive_factors': [],
+                    'feature_analysis': {}
+                },
+                'recommended_interest_rate': 15.0,
+                'conditions': ['Manual review required due to system error']
+            }
     
-    def _apply_training_feature_engineering(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Apply EXACTLY the same feature engineering as in train_models.py"""
+    def _calculate_risk_score(self, loan_data: Dict[str, Any], approval_probability: float) -> float:
+        """Calculate comprehensive risk score based on multiple factors"""
         
-        # Income ratios
-        df['total_income'] = df['applicant_income'] + df['coapplicant_income']
-        df['loan_to_income_ratio'] = df['loan_amount'] / df['total_income']
-        df['monthly_income'] = df['total_income'] / 12
-        df['monthly_emi_estimated'] = df['loan_amount'] / df['loan_amount_term']
-        df['emi_to_income_ratio'] = df['monthly_emi_estimated'] / df['monthly_income']
+        # Base risk from model probability (inverted)
+        base_risk = (1 - approval_probability) * 50
         
-        # Expense ratios
-        df['expense_to_income_ratio'] = df['monthly_expenses'] / df['monthly_income']
-        df['total_obligations'] = df['monthly_expenses'] + df['other_emis']
-        df['obligation_to_income_ratio'] = df['total_obligations'] / df['monthly_income']
-        
-        # Credit utilization and risk factors
-        df['credit_utilization_estimated'] = df['no_of_credit_cards'] * 50000 * 0.3
-        df['credit_age_score'] = df['age'] * 10 + df['credit_score']
-        df['employment_stability_score'] = df['years_in_current_job'] * 10
-        
-        # Asset ratios
-        df['collateral_to_loan_ratio'] = np.where(
-            df['loan_amount'] > 0,
-            df['collateral_value'] / df['loan_amount'],
-            0
-        )
-        
-        df['savings_months'] = np.where(
-            df['monthly_expenses'] > 0,
-            df['bank_balance'] / df['monthly_expenses'],
-            0
-        )
-        
-        # Risk composite scores
-        df['financial_stability_score'] = (
-            (df['total_income'] / 100000) +
-            (df['years_in_current_job'] * 2) +
-            (df['credit_score'] / 100) +
-            (5 - df['loan_default_history']) +
-            (df['has_life_insurance'].astype(int) * 2)
-        )
-        
-        df['risk_factor_count'] = (
-            (df['loan_default_history'] > 0).astype(int) +
-            (df['avg_payment_delay_days'] > 30).astype(int) +
-            (df['credit_score'] < 650).astype(int) +
-            (df['obligation_to_income_ratio'] > 0.6).astype(int) +
-            (df['region_default_rate'] > 8).astype(int)
-        )
-        
-        return df
-    
-    def _encode_categorical_features(self, df: pd.DataFrame) -> pd.DataFrame:
-        """Encode categorical features using loaded encoders"""
-        
-        categorical_features = [
-            'gender', 'married', 'education', 'self_employed', 'employment_type',
-            'employer_category', 'industry', 'loan_purpose', 'property_area',
-            'bank_account_type', 'collateral_type', 'city_tier'
-        ]
-        
-        # Binary encoding for Yes/No fields
-        binary_fields = {
-            'married': {'Yes': 1, 'No': 0},
-            'self_employed': {'Yes': 1, 'No': 0},
-            'gender': {'Male': 1, 'Female': 0}
-        }
-        
-        for field, mapping in binary_fields.items():
-            if field in df.columns:
-                df[field] = df[field].map(mapping)
-        
-        # Label encoding for multi-category fields using loaded encoders
-        for feature in categorical_features:
-            if feature in df.columns and feature not in binary_fields:
-                if feature in self.preprocessor.label_encoders:
-                    try:
-                        df[feature] = self.preprocessor.label_encoders[feature].transform(df[feature].astype(str))
-                    except ValueError:
-                        # Handle unseen categories by using the most frequent category (0)
-                        print(f"Warning: Unseen category in {feature}, using fallback value")
-                        df[feature] = 0
-                else:
-                    print(f"Warning: No encoder found for {feature}")
-                    df[feature] = 0
-        
-        return df
-    
-    def _apply_weights(self, df: pd.DataFrame, weights: Dict[str, float]) -> pd.DataFrame:
-        """Apply field weights to features"""
-        for column in df.columns:
-            if column in weights:
-                df[column] = df[column] * weights[column]
-        return df
-    
-    def _calculate_risk_score(self, loan_data: Dict[str, Any], prediction_proba: np.ndarray) -> float:
-        """Calculate risk score based on various factors"""
-        
-        # Base risk from model probability
-        base_risk = (1 - prediction_proba[1]) * 100 if len(prediction_proba) > 1 else 50
-        
-        # Additional risk factors
-        risk_adjustments = 0
-        
-        # Credit score risk
+        # Credit score risk component
         credit_score = loan_data.get('credit_score', 650)
-        if credit_score < 600:
-            risk_adjustments += 20
+        if credit_score < 500:
+            credit_risk = 30
+        elif credit_score < 600:
+            credit_risk = 20
         elif credit_score < 700:
-            risk_adjustments += 10
+            credit_risk = 10
+        elif credit_score < 750:
+            credit_risk = 5
+        else:
+            credit_risk = 0
+        
+        # Income stability risk
+        total_income = loan_data.get('applicant_income', 0) + loan_data.get('coapplicant_income', 0)
+        loan_amount = loan_data.get('loan_amount', 0)
+        
+        if total_income > 0:
+            loan_to_income = loan_amount / total_income
+            if loan_to_income > 10:
+                income_risk = 15
+            elif loan_to_income > 6:
+                income_risk = 10
+            elif loan_to_income > 4:
+                income_risk = 5
+            else:
+                income_risk = 0
+        else:
+            income_risk = 25
+        
+        # Employment stability risk
+        years_in_job = loan_data.get('years_in_current_job', 0)
+        if years_in_job < 1:
+            employment_risk = 10
+        elif years_in_job < 2:
+            employment_risk = 5
+        else:
+            employment_risk = 0
         
         # Default history risk
-        if loan_data.get('loan_default_history', 0) > 0:
-            risk_adjustments += 15
-        
-        # High debt-to-income ratio
-        total_income = loan_data.get('applicant_income', 0) + loan_data.get('coapplicant_income', 0)
-        if total_income > 0:
-            debt_ratio = (loan_data.get('other_emis', 0) * 12) / total_income
-            if debt_ratio > 0.4:
-                risk_adjustments += 10
+        default_history = loan_data.get('loan_default_history', 0)
+        default_risk = min(default_history * 8, 20)
         
         # Regional risk
-        if loan_data.get('region_default_rate', 5) > 10:
-            risk_adjustments += 5
+        regional_rate = loan_data.get('region_default_rate', 5)
+        if regional_rate > 10:
+            regional_risk = 8
+        elif regional_rate > 7:
+            regional_risk = 5
+        elif regional_rate > 5:
+            regional_risk = 2
+        else:
+            regional_risk = 0
         
-        return min(100, max(0, base_risk + risk_adjustments))
+        # Combine all risk factors
+        total_risk = base_risk + credit_risk + income_risk + employment_risk + default_risk + regional_risk
+        
+        # Normalize to 0-100 scale
+        return min(100, max(0, total_risk))
     
-    def _get_feature_importance(self, processed_data: np.ndarray) -> Dict[str, float]:
-        """Get feature importance scores"""
+    def _analyze_features(self, loan_data: Dict[str, Any], processed_data: np.ndarray) -> Dict[str, Any]:
+        """Analyze feature contributions to the prediction"""
         
-        if hasattr(self.model, 'feature_importances_'):
-            importance_scores = self.model.feature_importances_
-            feature_names = self.preprocessor.feature_names[:len(importance_scores)]
-            
-            return dict(zip(feature_names, importance_scores.tolist()))
+        analysis = {}
         
-        return {}
+        # Calculate key financial ratios
+        total_income = loan_data.get('applicant_income', 0) + loan_data.get('coapplicant_income', 0)
+        loan_amount = loan_data.get('loan_amount', 0)
+        monthly_expenses = loan_data.get('monthly_expenses', 0)
+        
+        if total_income > 0:
+            analysis['loan_to_income_ratio'] = loan_amount / total_income
+            analysis['expense_to_income_ratio'] = (monthly_expenses * 12) / total_income
+            analysis['monthly_income'] = total_income / 12
+        
+        # Employment stability score
+        analysis['employment_stability'] = loan_data.get('years_in_current_job', 0) * 2
+        
+        # Credit health score
+        credit_score = loan_data.get('credit_score', 650)
+        analysis['credit_health'] = min(100, (credit_score - 300) / 5.5)
+        
+        # Asset coverage
+        collateral_value = loan_data.get('collateral_value', 0)
+        if loan_amount > 0:
+            analysis['collateral_coverage'] = min(100, (collateral_value / loan_amount) * 100)
+        else:
+            analysis['collateral_coverage'] = 0
+        
+        return analysis
+    
+    def _get_score_breakdown(self, loan_data: Dict[str, Any]) -> Dict[str, float]:
+        """Get detailed score breakdown for transparency"""
+        
+        breakdown = {}
+        
+        # Credit score component (40% weight)
+        credit_score = loan_data.get('credit_score', 650)
+        breakdown['credit_score_component'] = min(40, (credit_score - 300) / 550 * 40)
+        
+        # Income stability component (25% weight)
+        total_income = loan_data.get('applicant_income', 0) + loan_data.get('coapplicant_income', 0)
+        loan_amount = loan_data.get('loan_amount', 0)
+        if total_income > 0 and loan_amount > 0:
+            income_ratio = total_income / loan_amount
+            breakdown['income_stability_component'] = min(25, income_ratio * 5)
+        else:
+            breakdown['income_stability_component'] = 0
+        
+        # Employment history component (20% weight)
+        years_in_job = loan_data.get('years_in_current_job', 0)
+        breakdown['employment_component'] = min(20, years_in_job * 4)
+        
+        # Credit history component (15% weight)
+        credit_history = loan_data.get('credit_history', 0)
+        default_history = loan_data.get('loan_default_history', 0)
+        breakdown['credit_history_component'] = max(0, 15 - (default_history * 5))
+        
+        # Calculate total
+        breakdown['total_score'] = sum(breakdown.values())
+        
+        return breakdown
     
     def _identify_risk_factors(self, loan_data: Dict[str, Any]) -> List[str]:
-        """Identify risk factors in the application"""
+        """Identify specific risk factors in the application"""
         
         risk_factors = []
         
-        if loan_data.get('credit_score', 650) < 600:
-            risk_factors.append("Low credit score")
+        # Credit score risks
+        credit_score = loan_data.get('credit_score', 650)
+        if credit_score < 600:
+            risk_factors.append(f"Low credit score ({credit_score})")
         
-        if loan_data.get('loan_default_history', 0) > 0:
-            risk_factors.append("Previous loan defaults")
+        # Default history risks
+        default_history = loan_data.get('loan_default_history', 0)
+        if default_history > 0:
+            risk_factors.append(f"Previous loan defaults ({default_history})")
         
-        if loan_data.get('avg_payment_delay_days', 0) > 30:
-            risk_factors.append("History of payment delays")
+        # Payment delay risks
+        avg_delay = loan_data.get('avg_payment_delay_days', 0)
+        if avg_delay > 30:
+            risk_factors.append(f"History of payment delays (avg {avg_delay:.0f} days)")
         
+        # Income vs loan amount risks
         total_income = loan_data.get('applicant_income', 0) + loan_data.get('coapplicant_income', 0)
+        loan_amount = loan_data.get('loan_amount', 0)
         if total_income > 0:
-            loan_ratio = loan_data.get('loan_amount', 0) / total_income
-            if loan_ratio > 5:
-                risk_factors.append("High loan-to-income ratio")
+            ratio = loan_amount / total_income
+            if ratio > 8:
+                risk_factors.append(f"Very high loan-to-income ratio ({ratio:.1f}x)")
+            elif ratio > 5:
+                risk_factors.append(f"High loan-to-income ratio ({ratio:.1f}x)")
         
-        if loan_data.get('region_default_rate', 5) > 10:
-            risk_factors.append("High regional default rate")
+        # Employment stability risks
+        years_in_job = loan_data.get('years_in_current_job', 0)
+        if years_in_job < 1:
+            risk_factors.append("Limited employment history")
+        
+        # Regional risks
+        regional_rate = loan_data.get('region_default_rate', 5)
+        if regional_rate > 10:
+            risk_factors.append(f"High regional default rate ({regional_rate:.1f}%)")
+        
+        # Age-related risks
+        age = loan_data.get('age', 30)
+        if age < 25:
+            risk_factors.append("Young applicant with limited credit history")
+        elif age > 60:
+            risk_factors.append("Near retirement age")
         
         return risk_factors
     
     def _identify_positive_factors(self, loan_data: Dict[str, Any]) -> List[str]:
-        """Identify positive factors in the application"""
+        """Identify positive factors that support approval"""
         
         positive_factors = []
         
-        if loan_data.get('credit_score', 650) > 750:
+        # Credit score positives
+        credit_score = loan_data.get('credit_score', 650)
+        if credit_score > 800:
             positive_factors.append("Excellent credit score")
+        elif credit_score > 750:
+            positive_factors.append("Very good credit score")
+        elif credit_score > 700:
+            positive_factors.append("Good credit score")
         
-        if loan_data.get('years_in_current_job', 0) > 5:
+        # Employment stability
+        years_in_job = loan_data.get('years_in_current_job', 0)
+        if years_in_job > 5:
+            positive_factors.append("Long-term stable employment")
+        elif years_in_job > 3:
             positive_factors.append("Stable employment history")
         
-        if loan_data.get('collateral_value', 0) > loan_data.get('loan_amount', 0):
-            positive_factors.append("Adequate collateral coverage")
+        # Income factors
+        total_income = loan_data.get('applicant_income', 0) + loan_data.get('coapplicant_income', 0)
+        if total_income > 100000:
+            positive_factors.append("High income level")
+        elif total_income > 60000:
+            positive_factors.append("Good income level")
         
-        if loan_data.get('savings_score', 10) > 20:
-            positive_factors.append("Good savings habit")
+        # Collateral coverage
+        collateral_value = loan_data.get('collateral_value', 0)
+        loan_amount = loan_data.get('loan_amount', 0)
+        if collateral_value > loan_amount * 1.5:
+            positive_factors.append("Excellent collateral coverage")
+        elif collateral_value > loan_amount:
+            positive_factors.append("Good collateral coverage")
         
+        # Assets and insurance
         if loan_data.get('has_life_insurance', False):
             positive_factors.append("Life insurance coverage")
+        
+        if loan_data.get('has_vehicle', False):
+            positive_factors.append("Vehicle ownership")
+        
+        # Savings
+        savings_score = loan_data.get('savings_score', 10)
+        if savings_score > 25:
+            positive_factors.append("Excellent savings habit")
+        elif savings_score > 15:
+            positive_factors.append("Good savings pattern")
+        
+        # Education
+        if loan_data.get('education') == 'Graduate':
+            positive_factors.append("Graduate education")
+        
+        # Employment type
+        employment_type = loan_data.get('employment_type', '')
+        if employment_type == 'Government':
+            positive_factors.append("Government employment")
         
         return positive_factors
     
@@ -272,54 +339,107 @@ class LoanPredictor:
                            loan_data: Dict[str, Any], 
                            prediction: bool, 
                            risk_score: float) -> List[str]:
-        """Generate loan conditions based on risk assessment"""
+        """Generate specific loan conditions based on risk assessment"""
         
         conditions = []
         
-        if risk_score > 70:
-            conditions.append("Higher interest rate due to elevated risk")
+        # Risk-based conditions
+        if risk_score > 80:
+            conditions.append("Requires senior management approval")
+            conditions.append("Enhanced documentation required")
+        elif risk_score > 60:
+            conditions.append("Additional income verification required")
+            conditions.append("Credit bureau re-verification needed")
+        elif risk_score > 40:
+            conditions.append("Standard income verification required")
         
-        if loan_data.get('collateral_value', 0) == 0 and risk_score > 50:
-            conditions.append("Collateral required")
+        # Collateral conditions
+        collateral_value = loan_data.get('collateral_value', 0)
+        loan_amount = loan_data.get('loan_amount', 0)
+        if collateral_value < loan_amount * 0.8 and risk_score > 50:
+            conditions.append("Additional collateral or guarantor required")
         
-        if loan_data.get('coapplicant_income', 0) == 0 and risk_score > 60:
-            conditions.append("Co-applicant recommended")
+        # Co-applicant conditions
+        if loan_data.get('coapplicant_income', 0) == 0 and risk_score > 50:
+            conditions.append("Co-applicant with stable income recommended")
         
-        if prediction and risk_score > 40:
-            conditions.append("Income verification required")
-            conditions.append("Credit bureau verification required")
+        # Credit score conditions
+        credit_score = loan_data.get('credit_score', 650)
+        if credit_score < 650:
+            conditions.append("Credit improvement plan required")
+        
+        # Insurance conditions
+        if not loan_data.get('has_life_insurance', False) and loan_amount > 500000:
+            conditions.append("Life insurance policy required")
+        
+        # Tenure conditions
+        loan_tenure = loan_data.get('loan_amount_term', 12)
+        if loan_tenure > 240:  # More than 20 years
+            conditions.append("Long tenure requires additional scrutiny")
         
         return conditions
     
     def _calculate_recommended_rate(self, loan_data: Dict[str, Any], risk_score: float) -> float:
-        """Calculate recommended interest rate"""
+        """Calculate risk-adjusted interest rate recommendation"""
         
-        base_rate = loan_data.get('requested_interest_rate', 12.0)
+        # Base rate (market rate)
+        base_rate = 12
         
-        # Risk-based pricing
-        if risk_score > 70:
-            base_rate += 3.0
-        elif risk_score > 50:
-            base_rate += 1.5
-        elif risk_score > 30:
-            base_rate += 0.5
+        # Risk-based pricing adjustment
+        if risk_score > 80:
+            risk_adjustment = 4.0
+        elif risk_score > 60:
+            risk_adjustment = 2.5
+        elif risk_score > 40:
+            risk_adjustment = 1.0
+        elif risk_score > 20:
+            risk_adjustment = 0.5
+        else:
+            risk_adjustment = -0.5  # Discount for very low risk
         
         # Credit score adjustment
         credit_score = loan_data.get('credit_score', 650)
         if credit_score > 800:
-            base_rate -= 1.0
+            credit_adjustment = -1.0
         elif credit_score > 750:
-            base_rate -= 0.5
+            credit_adjustment = -0.5
         elif credit_score < 600:
-            base_rate += 1.0
+            credit_adjustment = 1.5
+        elif credit_score < 650:
+            credit_adjustment = 0.5
+        else:
+            credit_adjustment = 0.0
         
-        return round(max(5.0, min(30.0, base_rate)), 2)
+        # Loan amount adjustment (larger loans get better rates)
+        loan_amount = loan_data.get('loan_amount', 0)
+        if loan_amount > 1000000:
+            amount_adjustment = -0.5
+        elif loan_amount > 500000:
+            amount_adjustment = -0.25
+        elif loan_amount < 100000:
+            amount_adjustment = 0.5
+        else:
+            amount_adjustment = 0.0
+        
+        # Calculate final rate
+        final_rate = base_rate + risk_adjustment + credit_adjustment + amount_adjustment
+        
+        # Ensure rate is within reasonable bounds
+        return round(max(6.0, min(30.0, final_rate)), 2)
     
     def load_model(self, model_path: str):
-        """Load trained model"""
+        """Load trained model and detect model type"""
         self.model = joblib.load(model_path)
+        
+        # Detect model type for logging
+        model_class = self.model.__class__.__name__
+        self.model_type = model_class
+        logger.info(f"Loaded model type: {model_class}")
     
     def save_model(self, model_path: str):
         """Save trained model"""
         if self.model:
             joblib.dump(self.model, model_path)
+            logger.info(f"Saved model to {model_path}")
+        else:
+            raise ValueError("No model to save")

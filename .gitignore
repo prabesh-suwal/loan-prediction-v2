@@ -140,6 +140,7 @@ sessions/
 *.pb
 
 # Model directories
+
 checkpoints/
 saved_models/
 artifacts/

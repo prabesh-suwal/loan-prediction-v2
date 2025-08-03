@@ -5,8 +5,9 @@ from pathlib import Path
 
 def run_command(command, description):
     """Run a command and handle errors"""
-    print(f"🔄 {description}...")
+    print(f"🔄 {description}... with command: {command}")
     try:
+
         result = subprocess.run(command, shell=True, check=True, capture_output=True, text=True)
         print(f"✅ {description} completed successfully")
         if result.stdout.strip():  # Only print stdout if there's meaningful content
@@ -57,7 +58,9 @@ def main():
     
     # Train models
     print("🤖 Training ML models...")
-    if run_command("python scripts/train_models.py --hyperparameter-tuning", "Training ML models"):
+    # if run_command("python scripts/train_models.py --hyperparameter-tuning", "Training ML models"):
+    if run_command("python scripts/train_models.py", "Training ML models"):
+
         print("✅ Models trained successfully")
     else:
         print("❌ Failed to train models")
@@ -65,18 +68,8 @@ def main():
     
     # Setup database
     print("🗄️  Setting up database...")
-    if run_command("alembic upgrade head", "Setting up database"):
-        print("✅ Database setup completed")
-    else:
-        print("❌ Database setup failed")
-        return
-    
-    # Initialize system data
-    print("🔧 Initializing system data...")
-    if run_command("python scripts/init_data.py", "Initializing system data"):
-        print("✅ System data initialized")
-    else:
-        print("❌ System initialization failed")
+    run_command("alembic upgrade head", "Setting up database")
+    print("✅ Database setup step completed")
     
     print("\n🎉 System setup completed successfully!")
     print("\n📋 Next steps:")

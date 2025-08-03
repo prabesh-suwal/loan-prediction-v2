@@ -43,6 +43,8 @@ class LoanService:
             'model_performance': prediction_result.get('model_performance')
         })
         
+        # Remove the key
+        loan_dict.pop('preferred_model', None)
         # Save to database
         loan_application = self.loan_repository.create(loan_dict)
         
